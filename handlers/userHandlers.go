@@ -3,12 +3,16 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-	"log"
 	"main.go/app"
 	"main.go/models"
-	"net/http"
 )
 
 // func CheckPasswordHash(password string, hash string) bool  {
@@ -46,10 +50,10 @@ func CreateUserHandler(app *app.App) http.HandlerFunc {
 
 func LoginUserHandler(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-        //email and password
+		//email and password
 		var reqUser models.UserLoginRequest
 
-        //transforma em json
+		//transforma em json
 		err := json.NewDecoder(r.Body).Decode(&reqUser)
 		if err != nil {
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
@@ -63,15 +67,32 @@ func LoginUserHandler(app *app.App) http.HandlerFunc {
 			return
 		}
 
-        //compara a senha inserida com a senha salva no db (hash)
-        validUser := checkPasswordHash(reqUser.Password, user.Password)
-        
-        if !validUser {
+		//compara a senha inserida com a senha salva no db (hash)
+		validPsw := checkPasswordHash(reqUser.Password, user.Password)
+
+		if !validPsw {
 			http.Error(w, "Email or password are incorrect", http.StatusUnauthorized)
 			return
+		}
+
+		key := []byte(os.Getenv("SECRET"))
+
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"ID":       user.ID,
+			"Username": user.Username,
+			"Email":    user.Email,
+			"Password": user.Password,
+			"Exp":      time.Now().Add(time.Hour * 72).Unix(),
+		})
+
+        tokenString, err := token.SignedString(key)
+        if err != nil {
+            http.Error(w, "Could not create JWT Token", http.StatusInternalServerError)
+            return
         }
 
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Authorization", tokenString) 
 
 		userJson, err := json.Marshal(user)
 		if err != nil {
@@ -83,7 +104,7 @@ func LoginUserHandler(app *app.App) http.HandlerFunc {
 	}
 }
 
-//fns privadas
+// fns privadas
 func getUserByEmail(app *app.App, email string) (*models.User, error) {
 	var user models.User
 	result := app.DB.Where("email = ?", email).First(&user)
