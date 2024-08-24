@@ -70,6 +70,44 @@ func GetUserByIdHandler(app *app.App) http.HandlerFunc {
 	}
 }
 
+func UpdateUserHandler(app *app.App) http.HandlerFunc  {
+   return func(w http.ResponseWriter, r *http.Request) {
+		id := chi.URLParam(r, "id")
+
+		var reqUser models.User
+
+		//transforma de json para Struct
+		err := json.NewDecoder(r.Body).Decode(&reqUser)
+		if err != nil {
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+			return
+		}
+
+        var user models.User
+
+        result := app.DB.Where("id = ?", id).First(&user)
+
+		if result.Error != nil {
+			if result.Error == gorm.ErrRecordNotFound {
+				fmt.Println("User not found")
+				http.Error(w, "Not Found", http.StatusNotFound)
+				return
+			} else {
+				fmt.Printf("Error querying user: %v\n", result.Error)
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+		}
+
+        user.Username = reqUser.Username
+        user.Email = reqUser.Email
+        hash, _ := hashPassword(reqUser.Password)
+        user.Password = hash
+        app.DB.Save(&user)
+
+    } 
+}
+
 func LoginUserHandler(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		//email and password
