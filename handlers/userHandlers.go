@@ -15,26 +15,19 @@ import (
 	"main.go/models"
 )
 
-// func CheckPasswordHash(password string, hash string) bool  {
-//     err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-//     return err == nil
-// }
-
 func CreateUserHandler(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var user models.User
 
 		err := json.NewDecoder(r.Body).Decode(&user)
 		if err != nil {
-			http.Error(w, "Json inválido", http.StatusBadRequest)
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
 
 		//encrypt
 		hash, _ := hashPassword(user.Password)
 		user.Password = hash
-		// bytes, _ := bcrypt.GenerateFromPassword([]byte(secret), 10)
-		// user.Password = string(bytes)
 
 		result := app.DB.Create(&user)
 		if result.Error != nil {
@@ -53,7 +46,7 @@ func LoginUserHandler(app *app.App) http.HandlerFunc {
 		//email and password
 		var reqUser models.UserLoginRequest
 
-		//transforma em json
+		//transforma de json para Struct
 		err := json.NewDecoder(r.Body).Decode(&reqUser)
 		if err != nil {
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
@@ -77,22 +70,25 @@ func LoginUserHandler(app *app.App) http.HandlerFunc {
 
 		key := []byte(os.Getenv("SECRET"))
 
+        // claim == JSON com as infos que deseja guardar no token, infos sensiveis n devem
+        // ser armazenadas no token (Ex: psw)
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"ID":       user.ID,
-			"Username": user.Username,
-			"Email":    user.Email,
-			"Password": user.Password,
-			"Exp":      time.Now().Add(time.Hour * 72).Unix(),
+			"sub":       user.ID,
+			"name": user.Username,
+			"email":    user.Email,
+			"exp":      time.Now().Add(time.Hour * 72).Unix(),
 		})
 
-        tokenString, err := token.SignedString(key)
-        if err != nil {
-            http.Error(w, "Could not create JWT Token", http.StatusInternalServerError)
-            return
-        }
+		tokenString, err := token.SignedString(key)
+		if err != nil {
+			http.Error(w, "Could not create JWT Token", http.StatusInternalServerError)
+			return
+		}
+
+        tokenString = "Bearer " + tokenString
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Authorization", tokenString) 
+		w.Header().Set("Authorization", tokenString)
 
 		userJson, err := json.Marshal(user)
 		if err != nil {
@@ -101,6 +97,14 @@ func LoginUserHandler(app *app.App) http.HandlerFunc {
 		}
 
 		w.Write(userJson)
+	}
+}
+
+func UserProfileHandler(app *app.App) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := r.Context().Value("userID")
+
+		fmt.Println(userID)
 	}
 }
 
