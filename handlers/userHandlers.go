@@ -70,8 +70,32 @@ func GetUserByIdHandler(app *app.App) http.HandlerFunc {
 	}
 }
 
-func UpdateUserHandler(app *app.App) http.HandlerFunc  {
-   return func(w http.ResponseWriter, r *http.Request) {
+func DeleteUserHandler(app *app.App) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := chi.URLParam(r, "id")
+
+		var user models.User
+
+		result := app.DB.Where("id = ?", id).Delete(&user)
+
+		if result.Error != nil {
+			fmt.Printf("Error querying user: %v\n", result.Error)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		if result.RowsAffected == 0 {
+			fmt.Println("User not found")
+			http.Error(w, "Not Found", http.StatusNotFound)
+            return
+		}
+
+		w.Write([]byte("User removed"))
+	}
+}
+
+func UpdateUserHandler(app *app.App) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 
 		var reqUser models.User
@@ -83,9 +107,9 @@ func UpdateUserHandler(app *app.App) http.HandlerFunc  {
 			return
 		}
 
-        var user models.User
+		var user models.User
 
-        result := app.DB.Where("id = ?", id).First(&user)
+		result := app.DB.Where("id = ?", id).First(&user)
 
 		if result.Error != nil {
 			if result.Error == gorm.ErrRecordNotFound {
@@ -99,13 +123,13 @@ func UpdateUserHandler(app *app.App) http.HandlerFunc  {
 			}
 		}
 
-        user.Username = reqUser.Username
-        user.Email = reqUser.Email
-        hash, _ := hashPassword(reqUser.Password)
-        user.Password = hash
-        app.DB.Save(&user)
+		user.Username = reqUser.Username
+		user.Email = reqUser.Email
+		hash, _ := hashPassword(reqUser.Password)
+		user.Password = hash
+		app.DB.Save(&user)
 
-    } 
+	}
 }
 
 func LoginUserHandler(app *app.App) http.HandlerFunc {
