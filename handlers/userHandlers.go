@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -41,6 +42,34 @@ func CreateUserHandler(app *app.App) http.HandlerFunc {
 
 }
 
+func GetUserByIdHandler(app *app.App) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := chi.URLParam(r, "id")
+		var user models.User
+		result := app.DB.Where("id = ?", id).First(&user)
+
+		if result.Error != nil {
+			if result.Error == gorm.ErrRecordNotFound {
+				fmt.Println("User not found")
+				http.Error(w, "Not Found", http.StatusNotFound)
+				return
+			} else {
+				fmt.Printf("Error querying user: %v\n", result.Error)
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+		}
+		w.Header().Set("Content-Type", "application/json")
+
+		userJson, err := json.Marshal(user)
+		if err != nil {
+			http.Error(w, "Error encoding user to JSON", http.StatusInternalServerError)
+			return
+		}
+		w.Write(userJson)
+	}
+}
+
 func LoginUserHandler(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		//email and password
@@ -70,13 +99,13 @@ func LoginUserHandler(app *app.App) http.HandlerFunc {
 
 		key := []byte(os.Getenv("SECRET"))
 
-        // claim == JSON com as infos que deseja guardar no token, infos sensiveis n devem
-        // ser armazenadas no token (Ex: psw)
+		// claim == JSON com as infos que deseja guardar no token, infos sensiveis n devem
+		// ser armazenadas no token (Ex: psw)
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"sub":       user.ID,
-			"name": user.Username,
-			"email":    user.Email,
-			"exp":      time.Now().Add(time.Hour * 72).Unix(),
+			"sub":   user.ID,
+			"name":  user.Username,
+			"email": user.Email,
+			"exp":   time.Now().Add(time.Hour * 72).Unix(),
 		})
 
 		tokenString, err := token.SignedString(key)
@@ -85,7 +114,7 @@ func LoginUserHandler(app *app.App) http.HandlerFunc {
 			return
 		}
 
-        tokenString = "Bearer " + tokenString
+		tokenString = "Bearer " + tokenString
 
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Authorization", tokenString)
