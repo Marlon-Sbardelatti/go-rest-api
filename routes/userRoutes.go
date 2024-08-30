@@ -7,16 +7,41 @@ import (
 	"main.go/middlewares"
 )
 
-func RegisterUserRoutes(r chi.Router, app *app.App) {
+func RegisterRoutes(r chi.Router, app *app.App) {
+	// Usuário
 	r.Route("/user", func(r chi.Router) {
-        r.Get("/{id}", handlers.GetUserByIdHandler(app))
-        r.Put("/{id}", handlers.UpdateUserHandler(app))
-        r.Delete("/{id}", handlers.DeleteUserHandler(app))
 		r.Post("/create", handlers.CreateUserHandler(app))
 		r.Post("/login", handlers.LoginUserHandler(app))
-		r.Post("/login", handlers.LoginUserHandler(app))
 
-		r.With(middlewares.AuthMiddleware).Get("/profile", handlers.UserProfileHandler(app))
+		// Sub-rotas com autenticação
+		r.With(middlewares.AuthMiddleware).Put("/{id}", handlers.UpdateUserHandler(app))
+		r.With(middlewares.AuthMiddleware).Delete("/{id}", handlers.DeleteUserHandler(app))
+		r.With(middlewares.AuthMiddleware).Get("/{id}", handlers.GetUserByIdHandler(app))
+		r.With(middlewares.AuthMiddleware).Get("/{id}/recipes/", handlers.GetUserRecipesHandler(app))
+	})
+
+	// Ingrediente
+	r.Route("/ingredient", func(r chi.Router) {
+		r.Get("/", handlers.GetAllIngredientsHandler(app))
+		r.Get("/{id}", handlers.GetIngredientByIdHandler(app))
+		r.Get("/{name}", handlers.GetIngredientByNameHandler(app))
+
+		// Sub-rotas com autenticação
+		r.With(middlewares.AuthMiddleware).Post("/create", handlers.CreateIngredientHandler(app))
+		r.With(middlewares.AuthMiddleware).Put("/{id}", handlers.UpdateIngredientHandler(app))
+		r.With(middlewares.AuthMiddleware).Delete("/{id}", handlers.DeleteIngredientHandler(app))
+	})
+
+	// Receita
+	r.Route("/recipe", func(r chi.Router) {
+		r.Get("/", handlers.GetAllRecipesHandler(app))
+		r.Get("/{id}", handlers.GetRecipeByIdHandler(app))
+		r.Get("/{name}", handlers.GetRecipeByNameHandler(app))
+
+		// Sub-rotas com autenticação
+		r.With(middlewares.AuthMiddleware).Post("/create", handlers.CreateRecipeHandler(app))
+		r.With(middlewares.AuthMiddleware).Put("/{id}", handlers.UpdateRecipeHandler(app))
+		r.With(middlewares.AuthMiddleware).Delete("/{id}", handlers.DeleteRecipeHandler(app))
 	})
 
 }

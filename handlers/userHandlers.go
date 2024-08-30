@@ -26,7 +26,7 @@ func CreateUserHandler(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		//encrypt
+		// Encrypt senha
 		hash, _ := hashPassword(user.Password)
 		user.Password = hash
 
@@ -70,6 +70,10 @@ func GetUserByIdHandler(app *app.App) http.HandlerFunc {
 	}
 }
 
+func GetUserRecipesHandler(app *app.App) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {}
+}
+
 func DeleteUserHandler(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
@@ -87,7 +91,7 @@ func DeleteUserHandler(app *app.App) http.HandlerFunc {
 		if result.RowsAffected == 0 {
 			fmt.Println("User not found")
 			http.Error(w, "Not Found", http.StatusNotFound)
-            return
+			return
 		}
 
 		w.Write([]byte("User removed"))
@@ -100,7 +104,7 @@ func UpdateUserHandler(app *app.App) http.HandlerFunc {
 
 		var reqUser models.User
 
-		//transforma de json para Struct
+		// Transforma de JSON para struct
 		err := json.NewDecoder(r.Body).Decode(&reqUser)
 		if err != nil {
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
@@ -134,24 +138,24 @@ func UpdateUserHandler(app *app.App) http.HandlerFunc {
 
 func LoginUserHandler(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//email and password
+		// E-mail e password
 		var reqUser models.UserLoginRequest
 
-		//transforma de json para Struct
+		// Transforma de JSON para struct
 		err := json.NewDecoder(r.Body).Decode(&reqUser)
 		if err != nil {
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
 
-		//verificando existência do usuário
+		// Verifica existência do usuário
 		user, err := getUserByEmail(app, reqUser.Email)
 		if err != nil {
 			http.Error(w, "Email or password are incorrect", http.StatusUnauthorized)
 			return
 		}
 
-		//compara a senha inserida com a senha salva no db (hash)
+		// Compara a senha inserida com a senha encriptada salva no db (hash)
 		validPsw := checkPasswordHash(reqUser.Password, user.Password)
 
 		if !validPsw {
@@ -161,8 +165,8 @@ func LoginUserHandler(app *app.App) http.HandlerFunc {
 
 		key := []byte(os.Getenv("SECRET"))
 
-		// claim == JSON com as infos que deseja guardar no token, infos sensiveis n devem
-		// ser armazenadas no token (Ex: psw)
+		// Claim (JSON) com as infos que deseja guardar no token
+		// Obs.: Informações sensíveis não devem ser armazenadas no token (Ex: psw)
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"sub":   user.ID,
 			"name":  user.Username,
@@ -199,7 +203,7 @@ func UserProfileHandler(app *app.App) http.HandlerFunc {
 	}
 }
 
-// fns privadas
+// Funções privadas
 func getUserByEmail(app *app.App, email string) (*models.User, error) {
 	var user models.User
 	result := app.DB.Where("email = ?", email).First(&user)
