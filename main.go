@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -11,14 +12,13 @@ import (
 )
 
 func main() {
-
-    // db := db.InitDB()
-    db := db.InitDB()
-    app := &app.App{DB: db}
+	db := db.InitDB()
+	app := &app.App{DB: db}
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-    
-    routes.RegisterUserRoutes(r, app)
+
+	routes.RegisterRoutes(r, app)
+	log.Println("Server running on Port 3000")
 	http.ListenAndServe(":3000", r)
 }

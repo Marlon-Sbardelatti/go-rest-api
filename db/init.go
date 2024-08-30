@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -31,7 +32,7 @@ func InitDB() *gorm.DB {
 		log.Fatalf("failed to connect database: %v", err)
 	}
 
-	err = db.AutoMigrate(&models.User{})
+	err = db.AutoMigrate(&models.User{}, &models.Ingredient{}, &models.Recipe{}, &models.IngredientsRecipes{})
 	if err != nil {
 		log.Fatalf("failed to migrate database: %v", err)
 	}
