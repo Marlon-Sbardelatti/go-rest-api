@@ -5,5 +5,5 @@ type Recipe struct {
 	UserID       uint   `gorm:"not null"`
 	Name         string `gorm:"unique;not null"`
 	Instructions string `gorm:"not null"`
-	User         User   `gorm:"foreignKey:UserID"`
+	User User `json:"-"` // Campo ignorado na serialização JSON
 }
