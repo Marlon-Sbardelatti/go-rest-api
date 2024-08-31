@@ -24,10 +24,11 @@ func RegisterRoutes(r chi.Router, app *app.App) {
 	r.Route("/ingredient", func(r chi.Router) {
 		r.Get("/", handlers.GetAllIngredientsHandler(app))
 		r.Get("/{id}", handlers.GetIngredientByIdHandler(app))
-		r.Get("/{name}", handlers.GetIngredientByNameHandler(app))
+		r.Get("/name/{name}", handlers.GetIngredientByNameHandler(app))
 
-		// Sub-rotas com autenticação
-		r.With(middlewares.AuthMiddleware).Post("/create", handlers.CreateIngredientHandler(app))
+		// // Sub-rotas com autenticação
+		// r.With(middlewares.AuthMiddleware).Post("/create", handlers.CreateIngredientHandler(app))
+		r.Post("/create", handlers.CreateIngredientHandler(app))
 		r.With(middlewares.AuthMiddleware).Put("/{id}", handlers.UpdateIngredientHandler(app))
 		r.With(middlewares.AuthMiddleware).Delete("/{id}", handlers.DeleteIngredientHandler(app))
 	})
