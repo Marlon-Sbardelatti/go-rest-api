@@ -17,7 +17,7 @@ func RegisterRoutes(r chi.Router, app *app.App) {
 		r.With(middlewares.AuthMiddleware).Put("/{id}", handlers.UpdateUserHandler(app))
 		r.With(middlewares.AuthMiddleware).Delete("/{id}", handlers.DeleteUserHandler(app))
 		r.With(middlewares.AuthMiddleware).Get("/{id}", handlers.GetUserByIdHandler(app))
-		r.With(middlewares.AuthMiddleware).Get("/{id}/recipes/", handlers.GetUserRecipesHandler(app))
+		r.Get("/{id}/recipes", handlers.GetUserRecipesHandler(app))
 	})
 
 	// Ingrediente

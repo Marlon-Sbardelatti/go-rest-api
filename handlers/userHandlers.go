@@ -71,7 +71,37 @@ func GetUserByIdHandler(app *app.App) http.HandlerFunc {
 }
 
 func GetUserRecipesHandler(app *app.App) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {}
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := chi.URLParam(r, "id")
+		var recipes []models.Recipe
+		result := app.DB.Where("user_id = ?", userID).Find(&recipes)
+
+		if result.Error != nil {
+			if result.Error == gorm.ErrRecordNotFound {
+				fmt.Println("User not found")
+				http.Error(w, "Not Found", http.StatusNotFound)
+				return
+			} else {
+				fmt.Printf("Error querying user: %v\n", result.Error)
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+		}
+		w.Header().Set("Content-Type", "application/json")
+
+		if len(recipes) == 0 {
+			http.Error(w, "No recipes found for this user", http.StatusNotFound)
+			return
+		}
+
+		recipesJson, err := json.Marshal(recipes)
+		if err != nil {
+			http.Error(w, "Error encoding user to JSON", http.StatusInternalServerError)
+			return
+		}
+
+        w.Write(recipesJson)
+	}
 }
 
 func DeleteUserHandler(app *app.App) http.HandlerFunc {
