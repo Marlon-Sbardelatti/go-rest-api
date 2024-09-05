@@ -29,8 +29,8 @@ func RegisterRoutes(r chi.Router, app *app.App) {
 		// // Sub-rotas com autenticação
 		// r.With(middlewares.AuthMiddleware).Post("/create", handlers.CreateIngredientHandler(app))
 		r.Post("/create", handlers.CreateIngredientHandler(app))
-		r.With(middlewares.AuthMiddleware).Put("/{id}", handlers.UpdateIngredientHandler(app))
-		r.With(middlewares.AuthMiddleware).Delete("/{id}", handlers.DeleteIngredientHandler(app))
+		r.Put("/{id}", handlers.UpdateIngredientHandler(app))
+		r.Delete("/{id}", handlers.DeleteIngredientHandler(app))
 	})
 
 	// Receita
