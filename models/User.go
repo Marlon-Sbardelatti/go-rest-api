@@ -8,9 +8,6 @@ type User struct {
 }
 
 type UserLoginRequest struct {
-    Email string 
-    Password string 
+	Email    string
+	Password string
 }
-
-
-

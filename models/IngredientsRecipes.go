@@ -1,9 +1,8 @@
 package models
 
 type IngredientsRecipes struct {
-	RecipeID     uint   `gorm:"primaryKey"`
-	IngredientID uint   `gorm:"primaryKey"`
-	Quantity     string `gorm:"not null"`
-	Recipe       uint   `gorm:"foreignKey:RecipeID"`
-	Ingredient   uint   `gorm:"foreignKey:IngredientID"`
+	RecipeID     uint       `gorm:"primaryKey" json:"-"`
+	IngredientID uint       `gorm:"primaryKey" json:"-"`
+	Quantity     string     `gorm:"not null" json:"quantity"`
+	Ingredient   Ingredient `gorm:"foreignKey:IngredientID;constraint:OnDelete:CASCADE" json:"ingredient"`
 }

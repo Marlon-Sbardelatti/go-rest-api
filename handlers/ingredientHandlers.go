@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	// "github.com/go-playground/validator/v10"
+
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
 	"main.go/app"
@@ -116,13 +116,12 @@ func GetIngredientByNameHandler(app *app.App) http.HandlerFunc {
 func CreateIngredientHandler(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var ingredient models.Ingredient
+
 		decoder := json.NewDecoder(r.Body)
 		decoder.DisallowUnknownFields()
+
 		err := decoder.Decode(&ingredient)
-		if err != nil {
-			http.Error(w, "Invalid JSON decode", http.StatusBadRequest)
-			return
-		} else if ingredient.Name == "" {
+		if err != nil || ingredient.Name == "" {
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
@@ -144,8 +143,11 @@ func UpdateIngredientHandler(app *app.App) http.HandlerFunc {
 		var reqIngredient models.Ingredient
 
 		// Transforma body da request para uma Struct sem o ID
-		err := json.NewDecoder(r.Body).Decode(&reqIngredient)
-		if err != nil {
+		decoder := json.NewDecoder(r.Body)
+		decoder.DisallowUnknownFields()
+
+		err := decoder.Decode(&reqIngredient)
+		if err != nil || reqIngredient.Name == "" {
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
@@ -195,6 +197,6 @@ func DeleteIngredientHandler(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		w.Write([]byte("Ingredient deleted"))
+		w.Write([]byte("Ingredient deleted!"))
 	}
 }
