@@ -18,6 +18,7 @@ func RegisterRoutes(r chi.Router, app *app.App) {
 		r.With(middlewares.AuthMiddleware).Delete("/{id}", handlers.DeleteUserHandler(app))
 		r.With(middlewares.AuthMiddleware).Get("/{id}", handlers.GetUserByIdHandler(app))
 		r.Get("/{id}/recipes", handlers.GetUserRecipesHandler(app))
+		r.Get("/", handlers.GetAllUsersHandler(app))
 	})
 
 	// Ingrediente
@@ -40,9 +41,13 @@ func RegisterRoutes(r chi.Router, app *app.App) {
 		r.Get("/{name}", handlers.GetRecipeByNameHandler(app))
 
 		// Sub-rotas com autenticação
-		r.With(middlewares.AuthMiddleware).Post("/create", handlers.CreateRecipeHandler(app))
-		r.With(middlewares.AuthMiddleware).Put("/{id}", handlers.UpdateRecipeHandler(app))
-		r.With(middlewares.AuthMiddleware).Delete("/{id}", handlers.DeleteRecipeHandler(app))
+		r.Post("/create", handlers.CreateRecipeHandler(app))
+		r.Put("/{id}", handlers.UpdateRecipeHandler(app))
+		r.Delete("/{id}", handlers.DeleteRecipeHandler(app))
+
+		// Adição e remoção de ingredientes associados à receita
+		r.Post("/ingredients/{id}", handlers.AddIngredientRecipeHandler(app))
+		r.Delete("/ingredients/{id}", handlers.DeleteIngredientRecipeHandler(app))
 	})
 
 }

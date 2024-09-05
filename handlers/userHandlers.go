@@ -20,8 +20,12 @@ func CreateUserHandler(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var user models.User
 
-		err := json.NewDecoder(r.Body).Decode(&user)
-		if err != nil {
+		// Transforma body da request para uma Struct sem o ID
+		decoder := json.NewDecoder(r.Body)
+		decoder.DisallowUnknownFields()
+
+		err := decoder.Decode(&user)
+		if err != nil || user.Username == "" || user.Email == "" || user.Password == "" {
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
@@ -42,10 +46,40 @@ func CreateUserHandler(app *app.App) http.HandlerFunc {
 
 }
 
+func GetAllUsersHandler(app *app.App) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var users []models.User
+
+		result := app.DB.Find(&users)
+
+		if result.Error != nil {
+			if result.Error == gorm.ErrRecordNotFound {
+				fmt.Println("Users not found")
+				http.Error(w, "Not Found", http.StatusNotFound)
+				return
+			} else {
+				fmt.Printf("Error querying user: %v\n", result.Error)
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+		}
+
+		userJson, err := json.Marshal(users)
+		if err != nil {
+			http.Error(w, "Error encoding users to JSON", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(userJson)
+	}
+}
+
 func GetUserByIdHandler(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		var user models.User
+
 		result := app.DB.Where("id = ?", id).First(&user)
 
 		if result.Error != nil {
@@ -59,13 +93,14 @@ func GetUserByIdHandler(app *app.App) http.HandlerFunc {
 				return
 			}
 		}
-		w.Header().Set("Content-Type", "application/json")
 
 		userJson, err := json.Marshal(user)
 		if err != nil {
 			http.Error(w, "Error encoding user to JSON", http.StatusInternalServerError)
 			return
 		}
+
+		w.Header().Set("Content-Type", "application/json")
 		w.Write(userJson)
 	}
 }
@@ -74,6 +109,7 @@ func GetUserRecipesHandler(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := chi.URLParam(r, "id")
 		var recipes []models.Recipe
+
 		result := app.DB.Where("user_id = ?", userID).Find(&recipes)
 
 		if result.Error != nil {
@@ -87,7 +123,6 @@ func GetUserRecipesHandler(app *app.App) http.HandlerFunc {
 				return
 			}
 		}
-		w.Header().Set("Content-Type", "application/json")
 
 		if len(recipes) == 0 {
 			http.Error(w, "No recipes found for this user", http.StatusNotFound)
@@ -100,7 +135,8 @@ func GetUserRecipesHandler(app *app.App) http.HandlerFunc {
 			return
 		}
 
-        w.Write(recipesJson)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(recipesJson)
 	}
 }
 
@@ -124,7 +160,7 @@ func DeleteUserHandler(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		w.Write([]byte("User removed"))
+		w.Write([]byte("User deleted!"))
 	}
 }
 
@@ -134,9 +170,12 @@ func UpdateUserHandler(app *app.App) http.HandlerFunc {
 
 		var reqUser models.User
 
-		// Transforma de JSON para struct
-		err := json.NewDecoder(r.Body).Decode(&reqUser)
-		if err != nil {
+		// Transforma body da request para uma Struct sem o ID
+		decoder := json.NewDecoder(r.Body)
+		decoder.DisallowUnknownFields()
+
+		err := decoder.Decode(&reqUser)
+		if err != nil || reqUser.Username == "" || reqUser.Email == "" || reqUser.Password == "" {
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
@@ -163,6 +202,7 @@ func UpdateUserHandler(app *app.App) http.HandlerFunc {
 		user.Password = hash
 		app.DB.Save(&user)
 
+		w.Write([]byte("User updated!"))
 	}
 }
 
@@ -212,31 +252,24 @@ func LoginUserHandler(app *app.App) http.HandlerFunc {
 
 		tokenString = "Bearer " + tokenString
 
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Authorization", tokenString)
-
 		userJson, err := json.Marshal(user)
 		if err != nil {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
 
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Authorization", tokenString)
 		w.Write(userJson)
-	}
-}
-
-func UserProfileHandler(app *app.App) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		userID := r.Context().Value("userID")
-
-		fmt.Println(userID)
 	}
 }
 
 // Funções privadas
 func getUserByEmail(app *app.App, email string) (*models.User, error) {
 	var user models.User
+
 	result := app.DB.Where("email = ?", email).First(&user)
+
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			fmt.Println("User not found")
