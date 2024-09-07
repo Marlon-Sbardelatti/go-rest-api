@@ -133,6 +133,7 @@ func CreateIngredientHandler(app *app.App) http.HandlerFunc {
 			return
 		}
 
+        w.WriteHeader(http.StatusCreated) 
 		w.Write([]byte("Ingredient created!"))
 	}
 }

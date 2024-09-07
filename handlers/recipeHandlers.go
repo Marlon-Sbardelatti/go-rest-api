@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"gorm.io/gorm"
@@ -95,6 +96,7 @@ func CreateRecipeHandler(app *app.App) http.HandlerFunc {
 			return
 		}
 
+		w.WriteHeader(http.StatusCreated)
 		w.Write([]byte("Recipe created!"))
 	}
 }
@@ -162,9 +164,61 @@ func DeleteRecipeHandler(app *app.App) http.HandlerFunc {
 }
 
 func AddIngredientRecipeHandler(app *app.App) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {}
+	return func(w http.ResponseWriter, r *http.Request) {
+		idStr := chi.URLParam(r, "id")
+		id, err := strconv.ParseUint(idStr, 10, 64)
+		if err != nil {
+			http.Error(w, "Error converting id param to uint", http.StatusInternalServerError)
+			return
+		}
+
+		var ingredientRecipeReq models.IngredientsRecipes
+
+		decoder := json.NewDecoder(r.Body)
+		decoder.DisallowUnknownFields()
+		err = decoder.Decode(&ingredientRecipeReq)
+		if err != nil {
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+			return
+		}
+
+		newRecipe := models.IngredientsRecipes{
+			RecipeID:     uint(id),
+			IngredientID: ingredientRecipeReq.IngredientID,
+			Quantity:     ingredientRecipeReq.Quantity,
+		}
+
+		result := app.DB.Create(&newRecipe)
+		if result.Error != nil {
+			http.Error(w, "Error adding ingredient to recipe", http.StatusBadRequest)
+			return
+		}
+
+		w.Write([]byte("Ingredient added!"))
+		w.WriteHeader(http.StatusCreated)
+	}
 }
 
 func DeleteIngredientRecipeHandler(app *app.App) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {}
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := chi.URLParam(r, "id")
+		ingredient_id := chi.URLParam(r, "ingredient_id")
+
+		var ingredientRecipe models.IngredientsRecipes
+		result := app.DB.Where("recipe_id = ? AND ingredient_id = ?", id, ingredient_id).Delete(&ingredientRecipe)
+
+		if result.Error != nil {
+			fmt.Printf("Error querying recipe: %v\n", result.Error)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		if result.RowsAffected == 0 {
+			fmt.Println("Recipe not found")
+			http.Error(w, "Not Found", http.StatusNotFound)
+			return
+		}
+
+		w.Write([]byte("Ingredient removed from recipe!"))
+	}
 }

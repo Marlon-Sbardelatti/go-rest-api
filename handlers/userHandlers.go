@@ -41,6 +41,7 @@ func CreateUserHandler(app *app.App) http.HandlerFunc {
 		}
 
 		log.Println("User created successfully!")
+        w.WriteHeader(http.StatusCreated) 
 		w.Write([]byte("User created!"))
 	}
 

@@ -47,7 +47,7 @@ func RegisterRoutes(r chi.Router, app *app.App) {
 
 		// Adição e remoção de ingredientes associados à receita
 		r.Post("/ingredients/{id}", handlers.AddIngredientRecipeHandler(app))
-		r.Delete("/ingredients/{id}", handlers.DeleteIngredientRecipeHandler(app))
+		r.Delete("/ingredients/{id}/{ingredient_id}", handlers.DeleteIngredientRecipeHandler(app))
 	})
 
 }
