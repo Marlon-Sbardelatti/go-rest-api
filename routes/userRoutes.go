@@ -17,8 +17,8 @@ func RegisterRoutes(r chi.Router, app *app.App) {
 		r.With(middlewares.AuthMiddleware).Put("/{id}", handlers.UpdateUserHandler(app))
 		r.With(middlewares.AuthMiddleware).Delete("/{id}", handlers.DeleteUserHandler(app))
 		r.With(middlewares.AuthMiddleware).Get("/{id}", handlers.GetUserByIdHandler(app))
-		r.Get("/{id}/recipes", handlers.GetUserRecipesHandler(app))
-		r.Get("/", handlers.GetAllUsersHandler(app))
+		r.With(middlewares.AuthMiddleware).Get("/{id}/recipes", handlers.GetUserRecipesHandler(app))
+		r.With(middlewares.AuthMiddleware).Get("/", handlers.GetAllUsersHandler(app))
 	})
 
 	// Ingrediente
@@ -28,26 +28,25 @@ func RegisterRoutes(r chi.Router, app *app.App) {
 		r.Get("/name/{name}", handlers.GetIngredientByNameHandler(app))
 
 		// // Sub-rotas com autenticação
-		// r.With(middlewares.AuthMiddleware).Post("/create", handlers.CreateIngredientHandler(app))
-		r.Post("/create", handlers.CreateIngredientHandler(app))
-		r.Put("/{id}", handlers.UpdateIngredientHandler(app))
-		r.Delete("/{id}", handlers.DeleteIngredientHandler(app))
+		r.With(middlewares.AuthMiddleware).Post("/create", handlers.CreateIngredientHandler(app))
+		r.With(middlewares.AuthMiddleware).Put("/{id}", handlers.UpdateIngredientHandler(app))
+		r.With(middlewares.AuthMiddleware).Delete("/{id}", handlers.DeleteIngredientHandler(app))
 	})
 
 	// Receita
 	r.Route("/recipe", func(r chi.Router) {
 		r.Get("/", handlers.GetAllRecipesHandler(app))
 		r.Get("/{id}", handlers.GetRecipeByIdHandler(app))
-		r.Get("/{name}", handlers.GetRecipeByNameHandler(app))
+		r.Get("/name/{name}", handlers.GetRecipeByNameHandler(app))
 
 		// Sub-rotas com autenticação
-		r.Post("/create", handlers.CreateRecipeHandler(app))
-		r.Put("/{id}", handlers.UpdateRecipeHandler(app))
-		r.Delete("/{id}", handlers.DeleteRecipeHandler(app))
+		r.With(middlewares.AuthMiddleware).Post("/create", handlers.CreateRecipeHandler(app))
+		r.With(middlewares.AuthMiddleware).Put("/{id}", handlers.UpdateRecipeHandler(app))
+		r.With(middlewares.AuthMiddleware).Delete("/{id}", handlers.DeleteRecipeHandler(app))
 
 		// Adição e remoção de ingredientes associados à receita
-		r.Post("/ingredients/{id}", handlers.AddIngredientRecipeHandler(app))
-		r.Delete("/ingredients/{id}/{ingredient_id}", handlers.DeleteIngredientRecipeHandler(app))
+		r.With(middlewares.AuthMiddleware).Post("/ingredients/{id}", handlers.AddIngredientRecipeHandler(app))
+		r.With(middlewares.AuthMiddleware).Delete("/ingredients/{id}/{ingredient_id}", handlers.DeleteIngredientRecipeHandler(app))
 	})
 
 }

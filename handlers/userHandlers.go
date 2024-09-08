@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -20,7 +19,7 @@ func CreateUserHandler(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var user models.User
 
-		// Transforma body da request para uma Struct sem o ID
+		// Transforma body da request para uma struct, sem o ID
 		decoder := json.NewDecoder(r.Body)
 		decoder.DisallowUnknownFields()
 
@@ -30,7 +29,7 @@ func CreateUserHandler(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		// Encrypt senha
+		// Encrypt da senha, convertida para hash
 		hash, _ := hashPassword(user.Password)
 		user.Password = hash
 
@@ -40,8 +39,7 @@ func CreateUserHandler(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		log.Println("User created successfully!")
-        w.WriteHeader(http.StatusCreated) 
+		w.WriteHeader(http.StatusCreated)
 		w.Write([]byte("User created!"))
 	}
 
@@ -111,6 +109,7 @@ func GetUserRecipesHandler(app *app.App) http.HandlerFunc {
 		userID := chi.URLParam(r, "id")
 		var recipes []models.Recipe
 
+		// Query que seleciona as receitas através do id de usuário associado
 		result := app.DB.Where("user_id = ?", userID).Find(&recipes)
 
 		if result.Error != nil {
@@ -125,11 +124,13 @@ func GetUserRecipesHandler(app *app.App) http.HandlerFunc {
 			}
 		}
 
+		// Verifica se foram encontradas linhas com aquele UserID
 		if len(recipes) == 0 {
 			http.Error(w, "No recipes found for this user", http.StatusNotFound)
 			return
 		}
 
+		// Transforma o array de structs do tipo Recipe em JSON
 		recipesJson, err := json.Marshal(recipes)
 		if err != nil {
 			http.Error(w, "Error encoding user to JSON", http.StatusInternalServerError)
@@ -171,11 +172,12 @@ func UpdateUserHandler(app *app.App) http.HandlerFunc {
 
 		var reqUser models.User
 
-		// Transforma body da request para uma Struct sem o ID
+		// Transforma body da request para uma struct, sem o ID
 		decoder := json.NewDecoder(r.Body)
 		decoder.DisallowUnknownFields()
-
 		err := decoder.Decode(&reqUser)
+
+		// Verifica a validez do JSON e se todos os campos necessários foram preenchidos
 		if err != nil || reqUser.Username == "" || reqUser.Email == "" || reqUser.Password == "" {
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
@@ -197,6 +199,7 @@ func UpdateUserHandler(app *app.App) http.HandlerFunc {
 			}
 		}
 
+		// Atribui à struct do usuário resgatado as novas informações passadas no JSON da request
 		user.Username = reqUser.Username
 		user.Email = reqUser.Email
 		hash, _ := hashPassword(reqUser.Password)
@@ -209,56 +212,58 @@ func UpdateUserHandler(app *app.App) http.HandlerFunc {
 
 func LoginUserHandler(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// E-mail e password
+		// Criação de uma struct de usuário com apenas e-mail e password
 		var reqUser models.UserLoginRequest
 
-		// Transforma de JSON para struct
+		// Transforma o JSON da requisição para struct do tipo UserLoginRequest
 		err := json.NewDecoder(r.Body).Decode(&reqUser)
 		if err != nil {
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
 
-		// Verifica existência do usuário
+		// Verifica existência do usuário no banco, guardando-o na struct, se existir
 		user, err := getUserByEmail(app, reqUser.Email)
 		if err != nil {
 			http.Error(w, "Email or password are incorrect", http.StatusUnauthorized)
 			return
 		}
 
-		// Compara a senha inserida com a senha encriptada salva no db (hash)
+		// Compara a senha inserida com a senha encriptada salva no banco (em hash)
 		validPsw := checkPasswordHash(reqUser.Password, user.Password)
-
 		if !validPsw {
 			http.Error(w, "Email or password are incorrect", http.StatusUnauthorized)
 			return
 		}
 
-		key := []byte(os.Getenv("SECRET"))
-
-		// Claim (JSON) com as infos que deseja guardar no token
-		// Obs.: Informações sensíveis não devem ser armazenadas no token (Ex: psw)
+		// Nova chave token é gerada, utilizando informações do usuário como claims
+		// Obs.: Informações sensíveis, como a senha, não devem ser armazenadas no token
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"sub":   user.ID,
 			"name":  user.Username,
 			"email": user.Email,
-			"exp":   time.Now().Add(time.Hour * 72).Unix(),
+			"exp":   time.Now().Add(time.Hour * 72).Unix(), // Tempo de expiração do token
 		})
 
+		// Token é assinado utilizando o SECRET
+		key := []byte(os.Getenv("SECRET"))
 		tokenString, err := token.SignedString(key)
 		if err != nil {
 			http.Error(w, "Could not create JWT Token", http.StatusInternalServerError)
 			return
 		}
 
+		// Adiciona o prefixo à String de retorno do token
 		tokenString = "Bearer " + tokenString
 
+		// Converte o usuário logado (resgatado do banco e convertido em struct) para JSON
 		userJson, err := json.Marshal(user)
 		if err != nil {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
 
+		// Retorna JSON do usuário e o token de autenticação no Header
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Authorization", tokenString)
 		w.Write(userJson)

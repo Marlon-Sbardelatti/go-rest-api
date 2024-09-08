@@ -133,7 +133,7 @@ func CreateIngredientHandler(app *app.App) http.HandlerFunc {
 			return
 		}
 
-        w.WriteHeader(http.StatusCreated) 
+		w.WriteHeader(http.StatusCreated)
 		w.Write([]byte("Ingredient created!"))
 	}
 }
@@ -143,7 +143,7 @@ func UpdateIngredientHandler(app *app.App) http.HandlerFunc {
 		id := chi.URLParam(r, "id")
 		var reqIngredient models.Ingredient
 
-		// Transforma body da request para uma Struct sem o ID
+		// Transforma body da request para uma struct, sem o ID
 		decoder := json.NewDecoder(r.Body)
 		decoder.DisallowUnknownFields()
 
@@ -153,7 +153,7 @@ func UpdateIngredientHandler(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		// Cria Struct para armazenar dados do atual ingrediente
+		// Cria struct para armazenar dados do atual ingrediente
 		var ingredient models.Ingredient
 
 		result := app.DB.Where("id = ?", id).First(&ingredient)
@@ -170,7 +170,7 @@ func UpdateIngredientHandler(app *app.App) http.HandlerFunc {
 			}
 		}
 
-		// Struct com o ingrediente recebe nome da Struct da request
+		// Struct com o ingrediente recebe nome da struct da request
 		ingredient.Name = reqIngredient.Name
 		app.DB.Save(&ingredient)
 
