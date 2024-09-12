@@ -45,8 +45,8 @@ func RegisterRoutes(r chi.Router, app *app.App) {
 		r.With(middlewares.AuthMiddleware).Delete("/{id}", handlers.DeleteRecipeHandler(app))
 
 		// Adição e remoção de ingredientes associados à receita
-		r.With(middlewares.AuthMiddleware).Post("/ingredients/{id}", handlers.AddIngredientRecipeHandler(app))
-		r.With(middlewares.AuthMiddleware).Delete("/ingredients/{id}/{ingredient_id}", handlers.DeleteIngredientRecipeHandler(app))
+		r.With(middlewares.AuthMiddleware).Post("/{id}/ingredients/", handlers.AddIngredientRecipeHandler(app))
+		r.With(middlewares.AuthMiddleware).Delete("/{id}/ingredients/{ingredient_id}", handlers.DeleteIngredientRecipeHandler(app))
 	})
 
 }
